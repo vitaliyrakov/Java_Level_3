@@ -76,7 +76,7 @@ public class ClientHandler {
 
                     //цикл работы
                     while (true) {
-                        String str = in.readUTF();
+                        String str = server.getAuthService().censor(in.readUTF());
 
                         if (str.startsWith("/")) {
                             if (str.startsWith(Command.NICK_CHG)) {

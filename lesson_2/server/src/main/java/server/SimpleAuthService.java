@@ -1,9 +1,10 @@
 package server;
 
-import java.io.FileNotFoundException;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class SimpleAuthService implements AuthService {
 
@@ -24,12 +25,33 @@ public class SimpleAuthService implements AuthService {
     }
 
     private List<UserData> users;
+    private HashMap<String, String> censorList;
 
     public SimpleAuthService() {
         users = new ArrayList<>();
+        censorList = new HashMap();
         init();
-        createNewTable();
+        createTableUser();
         selectAllUsers();
+
+        createTableCensor();
+//        insertCens("спб", "СПБ");
+//        insertCens("жопа", "****");
+        selectAllCensor();
+    }
+
+    private void selectAllCensor() {
+        String sql = "SELECT word, cens FROM censorList";
+        try (Connection conn = getConnection();
+             Statement st = conn.createStatement();
+             ResultSet rs = st.executeQuery(sql)) {
+            while (rs.next()) {
+                censorList.put(rs.getString("word"), rs.getString("cens"));
+//                System.out.println(rs.getString("word") +" "+ rs.getString("cens"));
+            }
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     private void init() {
@@ -45,11 +67,24 @@ public class SimpleAuthService implements AuthService {
         return DriverManager.getConnection(URL);
     }
 
-    private void createNewTable() {
+    private void createTableUser() {
         String sql = "CREATE TABLE IF NOT EXISTS user (\n"
                 + "	login text NOT NULL,\n"
                 + "	password text NOT NULL,\n"
                 + "	nickname text NOT NULL\n"
+                + ");";
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement()) {
+            stmt.execute(sql);
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private void createTableCensor() {
+        String sql = "CREATE TABLE IF NOT EXISTS censorList (\n"
+                + "	word text NOT NULL,\n"
+                + "	cens text NOT NULL\n"
                 + ");";
         try (Connection conn = getConnection();
              Statement stmt = conn.createStatement()) {
@@ -66,7 +101,6 @@ public class SimpleAuthService implements AuthService {
              ResultSet rs = st.executeQuery(sql)) {
             while (rs.next()) {
                 users.add(new UserData(rs.getString("login"), rs.getString("password"), rs.getString("nickname")));
-//                System.out.println(rs.getString("login") +" " + rs.getString("password") +" "+ rs.getString("nickname"));
             }
         } catch (SQLException e) {
             System.out.println(e.getMessage());
@@ -80,6 +114,18 @@ public class SimpleAuthService implements AuthService {
             pstmt.setString(1, login);
             pstmt.setString(2, nickname);
             pstmt.setString(3, password);
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    private void insertCens(String word, String cens) {
+        String sql = "INSERT INTO censorList(word, cens) VALUES(?,?)";
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, word);
+            pstmt.setString(2, cens);
             pstmt.executeUpdate();
         } catch (SQLException e) {
             System.out.println(e.getMessage());
@@ -132,4 +178,14 @@ public class SimpleAuthService implements AuthService {
             }
         return true;
     }
+
+    public String censor(String readUTF) {
+        for (Map.Entry<String, String> cens : censorList.entrySet()) {
+            if (readUTF.contains(cens.getKey())) {
+                return readUTF.replace(cens.getKey(), cens.getValue());
+            }
+        }
+        return readUTF;
+    }
+
 }

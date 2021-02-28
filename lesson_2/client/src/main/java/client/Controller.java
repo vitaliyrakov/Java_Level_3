@@ -20,11 +20,12 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.net.URL;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.ResourceBundle;
 
 public class Controller implements Initializable {
@@ -52,6 +53,8 @@ public class Controller implements Initializable {
 
     private boolean authenticated;
     private String nickname;
+    private String logMessFile;
+    private final int HISTORY_LINE = 100;
 
     private Stage stage;
     private Stage regStage;
@@ -114,6 +117,7 @@ public class Controller implements Initializable {
                             }
                             if (str.startsWith(Command.AUTH_OK)) {
                                 nickname = str.split("\\s")[1];
+                                logMessFile = "history_" + nickname + ".log";
                                 setAuthenticated(true);
                                 break;
                             }
@@ -130,6 +134,7 @@ public class Controller implements Initializable {
                     }
 
                     //цикл работы
+                    loadMessHistory();
                     while (true) {
                         String str = in.readUTF();
 
@@ -150,6 +155,7 @@ public class Controller implements Initializable {
                             }
                         } else {
                             textArea.appendText(str + "\n");
+                            logMess(str + "\n");
                         }
                     }
                 } catch (RuntimeException e) {
@@ -167,6 +173,32 @@ public class Controller implements Initializable {
 
             }).start();
 
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void logMess(String str) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(logMessFile, true))) {
+            Date date = new Date();
+            SimpleDateFormat formatForDateNow = new SimpleDateFormat("E dd.MM.yyyy ' ' hh:mm:ss");
+            writer.write(formatForDateNow.format(date) + " " + str);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadMessHistory() {
+        ArrayList<String> lines = new ArrayList<String>();
+        try (BufferedReader reader = new BufferedReader(new FileReader(logMessFile))) {
+            String str;
+            while ((str = reader.readLine()) != null) {
+                lines.add(str);
+            }
+            int i;
+            for (i = (lines.size() >= HISTORY_LINE) ? lines.size() - HISTORY_LINE : 0; i < lines.size(); i++) {
+                textArea.appendText(lines.get(i) + "\n");
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -5,10 +5,8 @@ import commands.Command;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.sql.SQLException;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
+import java.util.concurrent.*;
 
 public class Server {
     private ServerSocket server;
@@ -16,10 +14,13 @@ public class Server {
     private final int PORT = 8189;
     private List<ClientHandler> clients;
     private AuthService authService;
+    private final int COUNT_THREAD = 10;
 
     public Server() {
         clients = new CopyOnWriteArrayList<>();
         authService = new SimpleAuthService();
+        ExecutorService pool = Executors.newFixedThreadPool(COUNT_THREAD);
+
         try {
             server = new ServerSocket(PORT);
             System.out.println("server started");
@@ -27,13 +28,14 @@ public class Server {
             while (true) {
                 socket = server.accept();
                 System.out.println("client connected" + socket.getRemoteSocketAddress());
-                new ClientHandler(this, socket);
+                pool.execute(new ClientHandler(this, socket));
             }
 
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
             try {
+                pool.shutdown();
                 server.close();
             } catch (IOException e) {
                 e.printStackTrace();

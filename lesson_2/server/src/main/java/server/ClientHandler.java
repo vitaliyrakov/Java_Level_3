@@ -26,7 +26,7 @@ public class ClientHandler implements Runnable {
             out = new DataOutputStream(socket.getOutputStream());
 
         } catch (IOException e) {
-            e.printStackTrace();
+            Server.log.error(e.getMessage(), e);
         }
     }
 
@@ -39,7 +39,7 @@ public class ClientHandler implements Runnable {
                 String str = in.readUTF();
                 if (str.startsWith("/")) {
                     if (str.equals(Command.END)) {
-                        System.out.println("client want to disconnected ");
+                        Server.log.info("client want to disconnected ");
                         out.writeUTF(Command.END);
                         throw new RuntimeException("client want to disconnected");
                     }
@@ -53,12 +53,15 @@ public class ClientHandler implements Runnable {
                                 nickname = newNick;
                                 sendMsg(Command.AUTH_OK + " " + nickname);
                                 server.subscribe(this);
+                                Server.log.info("Успешная аутентификация " + nickname);
                                 break;
                             } else {
                                 sendMsg("С этим логинов уже вошли");
+                                Server.log.warn("С этим логинов уже вошли");
                             }
                         } else {
                             sendMsg("Неверный логин / пароль");
+                            Server.log.warn("Неверный логин / пароль");
                         }
                     }
 
@@ -71,8 +74,10 @@ public class ClientHandler implements Runnable {
                                 .registration(token[1], token[2], token[3]);
                         if (regSuccessful) {
                             sendMsg(Command.REG_OK);
+                            Server.log.info("Успешная регистрация");
                         } else {
                             sendMsg(Command.REG_NO);
+                            Server.log.warn("Регистрация не удалась");
                         }
                     }
                 }
@@ -90,12 +95,14 @@ public class ClientHandler implements Runnable {
                         if (server.getAuthService().changeNicknameByLogin(this.login, token[1])) {
                             server.broadcastMsg(this, "change nick on: " + token[1]);
                             out.writeUTF(Command.END);
+                            Server.log.info("Смена ника на: " + token[1]);
                             break;
                         }
                         continue;
                     }
                     if (str.equals(Command.END)) {
                         out.writeUTF(Command.END);
+                        Server.log.info("Отключение пользователя");
                         break;
                     }
 
@@ -113,23 +120,24 @@ public class ClientHandler implements Runnable {
 
 //               SocketTimeoutException
         } catch (SocketTimeoutException e) {
-            System.out.println(e.getMessage());
+            Server.log.warn(e.getMessage(), e);
             try {
                 out.writeUTF(Command.END);
             } catch (IOException ioException) {
-                ioException.printStackTrace();
+                Server.log.error(ioException.getMessage(), ioException);
             }
         } catch (RuntimeException e) {
-            System.out.println(e.getMessage());
+            Server.log.error(e.getMessage(), e);
         } catch (IOException e) {
-            e.printStackTrace();
+            Server.log.error(e.getMessage(), e);
         } finally {
-            System.out.println("Client disconnected");
+//            System.out.println("Client disconnected");
+            Server.log.info("client disconnected ");
             server.unsubscribe(this);
             try {
                 socket.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                Server.log.error(e.getMessage(), e);
             }
         }
     }
@@ -138,7 +146,7 @@ public class ClientHandler implements Runnable {
         try {
             out.writeUTF(msg);
         } catch (IOException e) {
-            e.printStackTrace();
+            Server.log.error(e.getMessage(), e);
         }
     }
 

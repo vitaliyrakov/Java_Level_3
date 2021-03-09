@@ -47,10 +47,9 @@ public class SimpleAuthService implements AuthService {
              ResultSet rs = st.executeQuery(sql)) {
             while (rs.next()) {
                 censorList.put(rs.getString("word"), rs.getString("cens"));
-//                System.out.println(rs.getString("word") +" "+ rs.getString("cens"));
             }
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            Server.log.error(e.getMessage(), e);
         }
     }
 
@@ -58,7 +57,7 @@ public class SimpleAuthService implements AuthService {
         try {
             Class.forName("org.sqlite.SQLiteJDBCLoader");
         } catch (ClassNotFoundException e) {
-            e.printStackTrace();
+            Server.log.error(e.getMessage(), e);
         }
     }
 
@@ -77,7 +76,7 @@ public class SimpleAuthService implements AuthService {
              Statement stmt = conn.createStatement()) {
             stmt.execute(sql);
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            Server.log.error(e.getMessage(), e);
         }
     }
 
@@ -90,7 +89,7 @@ public class SimpleAuthService implements AuthService {
              Statement stmt = conn.createStatement()) {
             stmt.execute(sql);
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            Server.log.error(e.getMessage(), e);
         }
     }
 
@@ -103,7 +102,7 @@ public class SimpleAuthService implements AuthService {
                 users.add(new UserData(rs.getString("login"), rs.getString("password"), rs.getString("nickname")));
             }
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            Server.log.error(e.getMessage(), e);
         }
     }
 
@@ -116,7 +115,7 @@ public class SimpleAuthService implements AuthService {
             pstmt.setString(3, password);
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            Server.log.error(e.getMessage(), e);
         }
     }
 
@@ -128,7 +127,7 @@ public class SimpleAuthService implements AuthService {
             pstmt.setString(2, cens);
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            Server.log.error(e.getMessage(), e);
         }
     }
 
@@ -142,7 +141,7 @@ public class SimpleAuthService implements AuthService {
             pstmt.setString(2, login);
             pstmt.executeUpdate();
         } catch (SQLException e) {
-            System.out.println(e.getMessage());
+            Server.log.error(e.getMessage(), e);
         }
         return true;
     }

@@ -1,12 +1,14 @@
 package server;
-
 import commands.Command;
+import org.apache.log4j.Logger;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Server {
     private ServerSocket server;
@@ -15,6 +17,7 @@ public class Server {
     private List<ClientHandler> clients;
     private AuthService authService;
     private final int COUNT_THREAD = 10;
+    static final Logger log = Logger.getLogger(String.valueOf(Server.class));
 
     public Server() {
         clients = new CopyOnWriteArrayList<>();
@@ -23,22 +26,23 @@ public class Server {
 
         try {
             server = new ServerSocket(PORT);
-            System.out.println("server started");
+            log.info("server started");
 
             while (true) {
                 socket = server.accept();
-                System.out.println("client connected" + socket.getRemoteSocketAddress());
+                log.info("client connected" + socket.getRemoteSocketAddress());
                 pool.execute(new ClientHandler(this, socket));
             }
 
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         } finally {
             try {
                 pool.shutdown();
                 server.close();
+                log.info("server close");
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error(e.getMessage(), e);
             }
         }
     }
@@ -47,6 +51,7 @@ public class Server {
         String message = String.format("[ %s ] : %s", sender.getNickname(), msg);
         for (ClientHandler c : clients) {
             c.sendMsg(message);
+            log.trace("Отправка всем сообщения");
         }
     }
 
@@ -57,6 +62,7 @@ public class Server {
                 c.sendMsg(message);
                 if (!c.equals(sender)) {
                     sender.sendMsg(message);
+                    log.trace("Отправка приватного сообщения");
                 }
                 return;
             }
@@ -66,11 +72,13 @@ public class Server {
 
     public void subscribe(ClientHandler clientHandler) {
         clients.add(clientHandler);
+        log.trace("Подписка клиента на получение сообщений");
         broadcastClientList();
     }
 
     public void unsubscribe(ClientHandler clientHandler) {
         clients.remove(clientHandler);
+        log.trace("Отписка клиента от получения сообщений");
         broadcastClientList();
     }
 
